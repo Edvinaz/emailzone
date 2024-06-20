@@ -1,0 +1,7 @@
+myhostname = mailproxy
+mydomain = yourdomain.com
+myorigin = $mydomain
+relayhost =
+mynetworks = 0.0.0.0/0
+recipient_access = hash:/etc/postfix/recipient_access
+smtpd_recipient_restrictions = check_recipient_access hash:/etc/postfix/recipient_access, permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination

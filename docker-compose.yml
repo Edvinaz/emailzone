@@ -1,0 +1,84 @@
+version: '3'
+
+services:
+  postfix:
+    image: mwader/postfix-relay
+    container_name: postfix
+    ports:
+      - "26:25"
+    environment:
+      - POSTFIX_myhostname=mailproxy
+      - POSTFIX_mydomain=yourdomain.com
+      - POSTFIX_relayhost=
+      - POSTFIX_mynetworks=0.0.0.0/0
+      - POSTFIX_smtpd_recipient_restrictions=check_recipient_access hash:/etc/postfix/recipient_access, permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
+    volumes:
+      - ./.docker/postfix/recipient_access:/etc/postfix/recipient_access
+      - ./.docker/postfix/main.cf:/etc/postfix/main.cf
+    depends_on:
+      - lsdp-app
+
+  #PHP Service
+  lsdp-app:
+    build:
+      context: .
+      dockerfile: ./.docker/php/Dockerfile
+    image: digitalocean.com/php
+    container_name: lsdp-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: lsdp-app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./.docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+      - lsdp-shared
+
+  #Nginx Service
+  lsdp-nginx:
+    image: nginx:alpine
+    container_name: lsdp-nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "82:80"
+    volumes:
+      - ./:/var/www
+      - ./.docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+      - lsdp-shared
+
+  #MySQL Service
+  lsdp-mysql:
+    image: mysql:5.7.22
+    container_name: lsdp-mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE: lsdp
+      MYSQL_ROOT_PASSWORD: admin
+      SERVICE_TAGS: dev
+      SERVICE_NAME: bt-vvs-mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./.docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+
+#Docker Networks
+networks:
+  lsdp-shared:
+    external: false
+  app-network:
+    driver: bridge
+#Volumes
+volumes:
+  dbdata:
+    driver: local
