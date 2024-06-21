@@ -1,29 +1,11 @@
 version: '3'
 
 services:
-  postfix:
-    image: mwader/postfix-relay
-    container_name: postfix
-    ports:
-      - "26:25"
-    environment:
-      - POSTFIX_myhostname=mailproxy
-      - POSTFIX_mydomain=yourdomain.com
-      - POSTFIX_relayhost=
-      - POSTFIX_mynetworks=0.0.0.0/0
-      - POSTFIX_smtpd_recipient_restrictions=check_recipient_access hash:/etc/postfix/recipient_access, permit_mynetworks, permit_sasl_authenticated, reject_unauth_destination
-    volumes:
-      - ./.docker/postfix/recipient_access:/etc/postfix/recipient_access
-      - ./.docker/postfix/main.cf:/etc/postfix/main.cf
-    depends_on:
-      - lsdp-app
-
   #PHP Service
   lsdp-app:
     build:
       context: .
       dockerfile: ./.docker/php/Dockerfile
-    image: digitalocean.com/php
     container_name: lsdp-app
     restart: unless-stopped
     tty: true
